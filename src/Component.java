@@ -107,7 +107,9 @@ public class Component {
 	}
 
 	/**
-	 * @param soldTable
+	 * Update the "Fait_Financier" table 
+	 * by setting the client balance in each day
+	 * @param soldTable a Hashtable<Day, Balance>
 	 * @throws SQLException
 	 */
 	public void updateSoldEachDay(Hashtable<String, Float> soldTable)
@@ -124,6 +126,10 @@ public class Component {
 		}
 	}
 
+	
+	/**
+	 * @throws SQLException
+	 */
 	public void getBuyTransaction() throws SQLException {
 		Statement stmt = DatabaseConnection.getConnection().createStatement();
 		String query = "SELECT  [productID], [price],[quantity] FROM [dbo].[transactions]  WHERE transactionType = 'Buy' order by Date";
