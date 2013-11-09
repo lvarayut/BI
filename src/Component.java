@@ -134,14 +134,16 @@ public class Component {
 		Statement stmt = DatabaseConnection.getConnection().createStatement();
 		String query = "SELECT  [productID], [price],[quantity] FROM [dbo].[transactions]  WHERE transactionType = 'Buy' order by Date";
 		ResultSet rBuyTran = stmt.executeQuery(query);
-		Hashtable<String, Float> buyTable = new Hashtable<String, Float>();
+		Hashtable<String, Float> buyTable = new Hashtable<Float, Hashtable<Float,Float>>();
 	}
 
 	public static void main(String[] args) throws SQLException {
 		Component c = new Component();
 		Hashtable<String, Float> soldeTable = new Hashtable<String, Float>();
-		soldeTable = c.getSoldEachDay();
-		c.updateSoldEachDay(soldeTable);
+		Hashtable<String, Float> buyTable = new Hashtable<String, Float>();
+//		soldeTable = c.getSoldEachDay();
+//		c.updateSoldEachDay(soldeTable);
+		buyTable = c.getBuyTransaction();
 
 	}
 
