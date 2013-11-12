@@ -177,7 +177,7 @@ public class Component {
 		double sold = 0;
 		while (rset.next()) {
 			String date = rset.getString("Date");
-			if(!sellingDate.contains(date))
+			if (!sellingDate.contains(date))
 				sellingDate.add(date);
 		}
 		return sellingDate;
@@ -222,8 +222,9 @@ public class Component {
 					benefitEachProduct.put(productID, benefit);
 				}
 			}
-			//Update [fait_benefice]
-			this.updatebenefitEachProduct(benefitEachProduct,sellingDate.get(index));
+			// Update [fait_benefice]
+			this.updatebenefitEachProduct(benefitEachProduct,
+					sellingDate.get(index));
 		}
 
 	}
@@ -236,17 +237,74 @@ public class Component {
 	 * @throws SQLException
 	 */
 	public void updatebenefitEachProduct(
-			Hashtable<String, Double> benefitEachProduct, String date) throws SQLException {
+			Hashtable<String, Double> benefitEachProduct, String date)
+			throws SQLException {
 		Statement stmt = DatabaseConnection.getConnection().createStatement();
 		Enumeration<String> keys = benefitEachProduct.keys();
 		while (keys.hasMoreElements()) {
 			Object key = keys.nextElement();
 			String query = "UPDATE [dbo].[fait_benefice] SET [benefice] = "
 					+ benefitEachProduct.get(key) + "  WHERE [produitID] = '"
-					+ key + "' AND [date] = {d '"
-					+ date + "'} ";
+					+ key + "' AND [date] = {d '" + date + "'} ";
 			stmt.executeUpdate(query);
 			System.out.println(query);
+		}
+	}
+
+	/**
+	 * Get the quantity of Stock
+	 * 
+	 * @return
+	 * @throws SQLException
+	 */
+	public Hashtable<String, Hashtable<String, Integer>> getQuantityStock()
+			throws SQLException {
+		Statement stmt = DatabaseConnection.getConnection().createStatement();
+		String query = "SELECT [produitID],convert(varchar(10), [date],120) As Date,[variationStock] FROM [groupe6].[dbo].[stocks] ORDER BY date";
+		ResultSet rset = stmt.executeQuery(query);
+		Hashtable<String, Hashtable<String, Integer>> productTable = new Hashtable<String, Hashtable<String, Integer>>();
+		Hashtable<String, Integer> productPreviousQuantity = new Hashtable<String, Integer>();
+
+		while (rset.next()) {
+			String date = rset.getString("Date");
+			int variationStock = rset.getInt("variationStock");
+			String product = rset.getString("produitID");
+			// Initialize the previous quantity, if it doesn't exist
+			if (!productPreviousQuantity.containsKey(product)) {
+				productPreviousQuantity.put(product, 0);
+			}
+			// Update quantity of Stock in each product
+			productPreviousQuantity.put(product,
+					productPreviousQuantity.get(product) + variationStock);
+			// Put the products in the Hashtable, if it doesn't exist
+			if (!productTable.containsKey(product)) {
+				productTable.put(product, new Hashtable<String, Integer>());
+			}
+			productTable.get(product).put(date,
+					productPreviousQuantity.get(product));
+		}
+		return productTable;
+	}
+
+	public void updateQuantityStock(
+			Hashtable<String, Hashtable<String, Integer>> productTable)
+			throws SQLException {
+		Statement stmt = DatabaseConnection.getConnection().createStatement();
+		Enumeration<String> productKeys = productTable.keys();
+		while (productKeys.hasMoreElements()) {
+			Object eachProductKey = productKeys.nextElement();
+			Enumeration<String> dateKeys = productTable.get(eachProductKey)
+					.keys();
+			while (dateKeys.hasMoreElements()) {
+				Object eachDateKey = dateKeys.nextElement();
+				String query = "UPDATE [dbo].[stocks] SET [Quantité_disponible] = "
+						+ productTable.get(eachProductKey).get(eachDateKey)
+						+ " WHERE [produitID] = '"
+						+ eachProductKey
+						+ "' AND [date] = {d '" + eachDateKey + "'} ";
+				stmt.executeUpdate(query);
+				System.out.println(query);
+			}
 		}
 	}
 
@@ -260,10 +318,14 @@ public class Component {
 		// c.updateSoldEachDay(soldeTable);
 
 		// Calculate benefit
-		Hashtable<String, ArrayList<ArrayList<Double>>> buyTable = c
-				.getBuyingTransaction();
-		ArrayList<String> sellingDate = c.getSellingDate();
-		 c.calculateBenefitEachProduct(buyTable,sellingDate);
+		// Hashtable<String, ArrayList<ArrayList<Double>>> buyTable = c
+		// .getBuyingTransaction();
+		// ArrayList<String> sellingDate = c.getSellingDate();
+		// c.calculateBenefitEachProduct(buyTable, sellingDate);
+		Hashtable<String, Hashtable<String, Integer>> productTable = new Hashtable<String, Hashtable<String, Integer>>();
+		productTable = c.getQuantityStock();
+		c.updateQuantityStock(productTable);
+
 	}
 
 }
