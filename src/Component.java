@@ -7,78 +7,9 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+import com.sun.org.glassfish.external.statistics.annotations.Reset;
+
 public class Component {
-	/**
-	 * Composant logiciel avec des exemples
-	 */
-	public class ComposantBD {
-
-		/**
-		 * RÃ©cupÃ©ration de la liste complÃ¨te des livres triÃ©e par titre.
-		 * 
-		 * @return un <code>ArrayList</code> contenant autant de tableaux de
-		 *         String (5 chaÃ®nes de caractÃ¨res) que de livres dans la
-		 *         base.
-		 * @throws SQLException
-		 *             en cas d'erreur de connexion Ã la base.
-		 */
-		// public static ArrayList<String[]> listeTousLivres() throws
-		// SQLException {
-		//
-		// ArrayList<String[]> livres = new ArrayList<String[]>();
-		//
-		// Statement stmt =
-		// DatabaseConnection.getConnection().createStatement();
-		// String query = "select * from livre order by titre";
-		// ResultSet rset = stmt.executeQuery(query);
-		//
-		// while (rset.next()) {
-		// String[] livre = new String[5];
-		// livre[0] = rset.getString("id");
-		// livre[1] = rset.getString("isbn10");
-		// livre[2] = rset.getString("isbn13");
-		// livre[3] = rset.getString("titre");
-		// livre[4] = rset.getString("auteur");
-		//
-		// livres.add(livre);
-		// }
-		// rset.close();
-		// stmt.close();
-		//
-		// return livres;
-		// }
-		//
-		//
-		// /**
-		// * RÃ©fÃ©rencement d'un nouveau livre dans la base de donnÃ©es.
-		// * @param isbn10
-		// * @param isbn13
-		// * @param titre
-		// * @param auteur
-		// * @return l'identifiant (id) du livre crÃ©Ã©.
-		// * @throws SQLException en cas d'erreur de connexion Ã la base.
-		// */
-		// public static int creerLivre(String isbn10, String isbn13, String
-		// titre, String auteur) throws SQLException {
-		// Statement stmt =
-		// DatabaseConnection.getConnection().createStatement();
-		//
-		// String insert =
-		// "insert into livre values(nextval('livre_id_seq'), '"+isbn10+"','"+isbn13+"','"+titre+"','"+auteur+"')";
-		// stmt.executeUpdate(insert);
-		//
-		// String query =
-		// "select currval('livre_id_seq') as valeur_courante_id_livre";
-		// ResultSet rset = stmt.executeQuery(query);
-		// rset.next();
-		// int id = rset.getInt("valeur_courante_id_livre");
-		// rset.close();
-		// stmt.close();
-		//
-		// return id;
-		// }
-	}
-
 	/**
 	 * Retrieve a client bank account's balance in each day.
 	 * 
@@ -180,6 +111,8 @@ public class Component {
 			if (!sellingDate.contains(date))
 				sellingDate.add(date);
 		}
+		rset.close();
+		stmt.close();
 		return sellingDate;
 
 	}
@@ -226,6 +159,7 @@ public class Component {
 			this.updatebenefitEachProduct(benefitEachProduct,
 					sellingDate.get(index));
 		}
+		stmt.close();
 
 	}
 
@@ -249,6 +183,7 @@ public class Component {
 			stmt.executeUpdate(query);
 			System.out.println(query);
 		}
+		stmt.close();
 	}
 
 	/**
@@ -283,6 +218,8 @@ public class Component {
 			productTable.get(product).put(date,
 					productPreviousQuantity.get(product));
 		}
+		rset.close();
+		stmt.close();
 		return productTable;
 	}
 
@@ -297,7 +234,7 @@ public class Component {
 					.keys();
 			while (dateKeys.hasMoreElements()) {
 				Object eachDateKey = dateKeys.nextElement();
-				String query = "UPDATE [dbo].[stocks] SET [Quantité_disponible] = "
+				String query = "UPDATE [dbo].[stocks] SET [Quantite_disponible] = "
 						+ productTable.get(eachProductKey).get(eachDateKey)
 						+ " WHERE [produitID] = '"
 						+ eachProductKey
@@ -306,36 +243,40 @@ public class Component {
 				System.out.println(query);
 			}
 		}
+		stmt.close();
 	}
-	
+
 	/**
 	 * Get value of stock (QuantityStock*LastSellingPrice) in each day
+	 * 
 	 * @return
 	 * @throws SQLException
 	 */
 	public Hashtable<String, Double> getValueOfStock() throws SQLException {
 		Statement stmt = DatabaseConnection.getConnection().createStatement();
-		String query = "SELECT convert(varchar(10) As Date, [date],120), [dernierPrixVente],[quantit�_disponible]  FROM [dbo].[stocks]  order by Date ";
+		String query = "SELECT convert(varchar(10), [date],120) As Date, [dernierPrixVente],[Quantite_disponible]  FROM [dbo].[stocks]  order by Date ";
 		ResultSet rset = stmt.executeQuery(query);
 		Hashtable<String, Double> dateValueStock = new Hashtable<String, Double>();
 		while (rset.next()) {
 			String date = rset.getString("Date");
 			double lastPrice = rset.getDouble("dernierPrixVente");
-			int quantity = rset.getInt("quantit�_disponible");
-			// Convert NULL value to 0
-			quantity = Integer.parseInt(query);
+			int quantity = rset.getInt("quantite_disponible");
 			// Initialize the Hashtable, dateValueStock
-			if(!dateValueStock.containsKey(date)){
+			if (!dateValueStock.containsKey(date)) {
 				dateValueStock.put(date, 0.0);
 			}
-			dateValueStock.put(date, dateValueStock.get(date)+lastPrice*quantity);
+			dateValueStock.put(date, dateValueStock.get(date) + lastPrice
+					* quantity);
 		}
+		rset.close();
+		stmt.close();
 		return dateValueStock;
 
 	}
-	
+
 	/**
 	 * Update value of Stock
+	 * 
 	 * @param dateValueStock
 	 * @throws SQLException
 	 */
@@ -345,14 +286,112 @@ public class Component {
 		Enumeration<String> keys = dateValueStock.keys();
 		while (keys.hasMoreElements()) {
 			Object key = keys.nextElement();
-			System.out.println(" Key :" + key + " Value: " + dateValueStock.get(key)
-					+ "\n");
-			String query = "UPDATE [dbo].[fait_financier] SET [valeurStock] = "
-					+ dateValueStock.get(key) + "  WHERE [date] = {d '" + key + "'}";
-			//stmt.executeUpdate(query);
+			String query = "UPDATE [groupe6].[dbo].[fait_financier] SET [valeurStock] = "
+					+ dateValueStock.get(key) + "  WHERE [date] = {d '" + key
+					+ "'}";
+			stmt.executeUpdate(query);
+			System.out.println(query);
 		}
+		stmt.close();
 	}
 
+	public Hashtable<String, Hashtable<String, Double>> getLastSellingPrice()
+			throws SQLException {
+		Statement stmt = DatabaseConnection.getConnection().createStatement();
+		String query = "SELECT [produitID],convert(varchar(10), [date],120) As Date FROM [groupe6].[dbo].[stocks] WHERE [dernierPrixVente] is NULL ORDER BY Date,[produitID]";
+		ResultSet rset = stmt.executeQuery(query);
+		Hashtable<String,ArrayList<String>> productDateNull = new Hashtable<String, ArrayList<String>>();
+		Hashtable<String,ArrayList<String>> productNoPreviousDate = new Hashtable<String,ArrayList<String>>();
+		Hashtable<String, Hashtable<String, Double>> productDatePrice = new Hashtable<String, Hashtable<String, Double>>();
+		// Get all Products having NULL
+		while (rset.next()) {
+			String product = rset.getString("produitID");
+			String date = rset.getString("Date");
+			// Initialize productDateNull
+			if(!productDateNull.containsKey(product)){
+				productDateNull.put(product, new ArrayList<String>());
+			} 
+			productDateNull.get(product).add(date);
+		}
+		
+		// Loops all the products in the Hashtable(ProductID,ArrayList(Date))
+		Enumeration<String> productKeys = productDateNull.keys();
+		while (productKeys.hasMoreElements()) {
+			Object eachProductKey = productKeys.nextElement();
+			for(int i=0;i<productDateNull.get(eachProductKey).size();i++){
+			// Simplify Date by removing '-'
+			// If there is a previous date
+			query = "SELECT [quantity],[price] FROM [groupe6].[dbo].[transactions] WHERE [productID] = "
+					+ eachProductKey
+					+ " AND [date] < {d '"
+					+ productDateNull.get(eachProductKey).get(i)
+					+ "'} AND [transactionType] = 'Sell' ORDER BY [date] DESC";
+			rset = stmt.executeQuery(query);
+			// Verify whether there are any results or not. In other words, are
+			// there any previous dates? If yes!
+			if (rset.next()) {
+				if(!productDatePrice.containsKey(eachProductKey)){
+					productDatePrice.put((String) eachProductKey, new Hashtable<String,Double>());
+				}
+				productDatePrice.get(eachProductKey).put(productDateNull.get(eachProductKey).get(i), rset.getDouble("price"));
+			} else {
+				if(!productNoPreviousDate.containsKey(eachProductKey)){
+					productNoPreviousDate.put((String) eachProductKey,new ArrayList<String>());
+				}
+				productNoPreviousDate.get(eachProductKey).add(productDateNull.get(eachProductKey).get(i));
+			}
+			}
+
+		}
+		// Loops all the products no previous value
+		int totalQuantity;
+		double totalPrice;
+		productKeys = productNoPreviousDate.keys();
+		while (productKeys.hasMoreElements()) {
+			Object eachProductKey = productKeys.nextElement();
+			for(int i=0;i<productNoPreviousDate.get(eachProductKey).size();i++){
+			query = "SELECT [quantity],[price] FROM [groupe6].[dbo].[transactions] WHERE [productID] = "
+					+ eachProductKey + " AND [date] = {d '" + productNoPreviousDate.get(eachProductKey).get(i) + "'}";
+			rset = stmt.executeQuery(query);
+			totalQuantity = 0;
+			totalPrice = 0.0;
+			while (rset.next()) {
+				int quantity = rset.getInt("quantity");
+				double price = rset.getDouble("price");
+				totalQuantity += quantity;
+				totalPrice += price*quantity;
+			}
+			if(!productDatePrice.containsKey(eachProductKey)){
+				productDatePrice.put((String) eachProductKey, new Hashtable<String,Double>());
+			}
+			productDatePrice.get(eachProductKey).put(productNoPreviousDate.get(eachProductKey).get(i), totalPrice/totalQuantity);
+		}
+		}
+		return productDatePrice;
+	}
+
+	
+	public void updateLastSellingPrice(Hashtable<String, Hashtable<String, Double>> productDatePrice)
+			throws SQLException {
+		Statement stmt = DatabaseConnection.getConnection().createStatement();
+		Enumeration<String> productKeys = productDatePrice.keys();
+
+		while (productKeys.hasMoreElements()) {
+			Object eachProductkey = productKeys.nextElement();
+			Enumeration<String> dateKeys = productDatePrice.get(eachProductkey).keys();
+			while (dateKeys.hasMoreElements()) {
+				Object eachDatekey = dateKeys.nextElement();
+			String query = "UPDATE [groupe6].[dbo].[stocks] SET [dernierPrixVente] = "
+					+ productDatePrice.get(eachProductkey).get(eachDatekey) + "  WHERE [produitID] = '"
+					+ eachProductkey + "' AND [date] = {d '" + eachDatekey + "'} ";
+			
+			stmt.executeUpdate(query);
+			System.out.println(query);
+			}
+		}
+		stmt.close();
+	}
+	
 	public static void main(String[] args) throws SQLException {
 		Component c = new Component();
 
@@ -367,11 +406,24 @@ public class Component {
 		// .getBuyingTransaction();
 		// ArrayList<String> sellingDate = c.getSellingDate();
 		// c.calculateBenefitEachProduct(buyTable, sellingDate);
-//		Hashtable<String, Hashtable<String, Integer>> productTable = new Hashtable<String, Hashtable<String, Integer>>();
-//		productTable = c.getQuantityStock();
-//		c.updateQuantityStock(productTable);
-		Hashtable<String, Double> dateValueStock = new Hashtable<String,Double>();
-		dateValueStock = c.getValueOfStock();
+
+		// Calculate Quantity of Stock
+		// Hashtable<String, Hashtable<String, Integer>> productTable = new
+		// Hashtable<String, Hashtable<String, Integer>>();
+		// productTable = c.getQuantityStock();
+		// c.updateQuantityStock(productTable);
+
+		// Calculate value of Stock
+		 Hashtable<String, Double> dateValueStock = new
+		 Hashtable<String,Double>();
+		 dateValueStock = c.getValueOfStock();
+		 System.out.println(dateValueStock);
+		 c.updateValueOfStock(dateValueStock);
+		
+		// Replace NULL values in last selling price
+//		Hashtable<String, Hashtable<String, Double>> productDatePrice = new Hashtable<String, Hashtable<String, Double>>();
+//		productDatePrice = c.getLastSellingPrice();
+//		c.updateLastSellingPrice(productDatePrice);
 
 	}
 
