@@ -307,6 +307,51 @@ public class Component {
 			}
 		}
 	}
+	
+	/**
+	 * Get value of stock (QuantityStock*LastSellingPrice) in each day
+	 * @return
+	 * @throws SQLException
+	 */
+	public Hashtable<String, Double> getValueOfStock() throws SQLException {
+		Statement stmt = DatabaseConnection.getConnection().createStatement();
+		String query = "SELECT convert(varchar(10) As Date, [date],120), [dernierPrixVente],[quantité_disponible]  FROM [dbo].[stocks]  order by Date ";
+		ResultSet rset = stmt.executeQuery(query);
+		Hashtable<String, Double> dateValueStock = new Hashtable<String, Double>();
+		while (rset.next()) {
+			String date = rset.getString("Date");
+			double lastPrice = rset.getDouble("dernierPrixVente");
+			int quantity = rset.getInt("quantité_disponible");
+			// Convert NULL value to 0
+			quantity = Integer.parseInt(query);
+			// Initialize the Hashtable, dateValueStock
+			if(!dateValueStock.containsKey(date)){
+				dateValueStock.put(date, 0.0);
+			}
+			dateValueStock.put(date, dateValueStock.get(date)+lastPrice*quantity);
+		}
+		return dateValueStock;
+
+	}
+	
+	/**
+	 * Update value of Stock
+	 * @param dateValueStock
+	 * @throws SQLException
+	 */
+	public void updateValueOfStock(Hashtable<String, Double> dateValueStock)
+			throws SQLException {
+		Statement stmt = DatabaseConnection.getConnection().createStatement();
+		Enumeration<String> keys = dateValueStock.keys();
+		while (keys.hasMoreElements()) {
+			Object key = keys.nextElement();
+			System.out.println(" Key :" + key + " Value: " + dateValueStock.get(key)
+					+ "\n");
+			String query = "UPDATE [dbo].[fait_financier] SET [valeurStock] = "
+					+ dateValueStock.get(key) + "  WHERE [date] = {d '" + key + "'}";
+			//stmt.executeUpdate(query);
+		}
+	}
 
 	public static void main(String[] args) throws SQLException {
 		Component c = new Component();
@@ -322,9 +367,11 @@ public class Component {
 		// .getBuyingTransaction();
 		// ArrayList<String> sellingDate = c.getSellingDate();
 		// c.calculateBenefitEachProduct(buyTable, sellingDate);
-		Hashtable<String, Hashtable<String, Integer>> productTable = new Hashtable<String, Hashtable<String, Integer>>();
-		productTable = c.getQuantityStock();
-		c.updateQuantityStock(productTable);
+//		Hashtable<String, Hashtable<String, Integer>> productTable = new Hashtable<String, Hashtable<String, Integer>>();
+//		productTable = c.getQuantityStock();
+//		c.updateQuantityStock(productTable);
+		Hashtable<String, Double> dateValueStock = new Hashtable<String,Double>();
+		dateValueStock = c.getValueOfStock();
 
 	}
 
