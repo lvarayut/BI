@@ -259,7 +259,6 @@ public class Component {
 		Hashtable<String, Double> dateValueStock = new Hashtable<String, Double>();
 		Hashtable<String, Double> productValueStock = new Hashtable<String, Double>();
 		double previousLineValueStock = 0.0;
-		String previousDate = "";
 		while (rset.next()) {
 			String product = rset.getString("produitID");
 			String date = rset.getString("Date");
@@ -281,8 +280,6 @@ public class Component {
 				// Keep value of the previous line
 				previousLineValueStock = valueOfStock;
 			}
-			// Keep last date
-			previousDate = date;
 			// Keep last selling for distinct products
 			productValueStock.put(product, lastPrice * quantity);
 		}
