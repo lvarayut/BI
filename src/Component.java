@@ -254,19 +254,37 @@ public class Component {
 	 */
 	public Hashtable<String, Double> getValueOfStock() throws SQLException {
 		Statement stmt = DatabaseConnection.getConnection().createStatement();
-		String query = "SELECT convert(varchar(10), [date],120) As Date, [dernierPrixVente],[Quantite_disponible]  FROM [dbo].[stocks]  order by Date ";
+		String query = "SELECT [produitID],convert(varchar(10), [date],120) As Date, [dernierPrixVente],[Quantite_disponible]  FROM [dbo].[stocks]  order by Date ";
 		ResultSet rset = stmt.executeQuery(query);
 		Hashtable<String, Double> dateValueStock = new Hashtable<String, Double>();
+		Hashtable<String, Double> productValueStock = new Hashtable<String, Double>();
+		double previousLineValueStock = 0.0;
+		String previousDate = "";
 		while (rset.next()) {
+			String product = rset.getString("produitID");
 			String date = rset.getString("Date");
 			double lastPrice = rset.getDouble("dernierPrixVente");
 			int quantity = rset.getInt("quantite_disponible");
+			double valueOfStock = lastPrice * quantity  +previousLineValueStock;
 			// Initialize the Hashtable, dateValueStock
 			if (!dateValueStock.containsKey(date)) {
 				dateValueStock.put(date, 0.0);
 			}
-			dateValueStock.put(date, dateValueStock.get(date) + lastPrice
-					* quantity);
+			// If the product has calculated before
+			if(productValueStock.containsKey(product)){
+				dateValueStock.put(date,  valueOfStock - productValueStock.get(product));
+				// Keep value of the previous line
+				previousLineValueStock = valueOfStock-productValueStock.get(product);
+			}
+			else{
+				dateValueStock.put(date, valueOfStock);
+				// Keep value of the previous line
+				previousLineValueStock = valueOfStock;
+			}
+			// Keep last date
+			previousDate = date;
+			// Keep last selling for distinct products
+			productValueStock.put(product, lastPrice * quantity);
 		}
 		rset.close();
 		stmt.close();
@@ -414,10 +432,8 @@ public class Component {
 		// c.updateQuantityStock(productTable);
 
 		// Calculate value of Stock
-		 Hashtable<String, Double> dateValueStock = new
-		 Hashtable<String,Double>();
+		 Hashtable<String, Double> dateValueStock = new Hashtable<String,Double>();
 		 dateValueStock = c.getValueOfStock();
-		 System.out.println(dateValueStock);
 		 c.updateValueOfStock(dateValueStock);
 		
 		// Replace NULL values in last selling price
